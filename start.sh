@@ -65,7 +65,6 @@ dir=(
     /etc/postfix
     /etc/roundcubemail
     /etc/sasldb2
-    /etc/supervisord.conf
     /etc/clamd.conf
     /etc/clamd.d
     /etc/freshclam.conf
@@ -101,7 +100,6 @@ dir=(
     /var/log/nginx
     /var/log/php-fpm
     /var/log/roundcubemail
-    /var/log/supervisor
 )
 
 
@@ -199,18 +197,22 @@ EOF
 
 configure_nginx()
 {
-    if [ "$(grep -c "^[^;]*nginx" /etc/supervisord.conf)" == "0" ] ; then
+    if [ "$(systemctl is-enabled nginx; echo $?)" == "1" ] ; then
         echo "info:  start configuring nginx"
 
         sed -i '/^\[kolab_wap\]/,/^\[/ { x; /^$/ !{ x; H }; /^$/ { x; h; }; d; }; x; /^\[kolab_wap\]/ { s/\(\n\+[^\n]*\)$/\napi_url = https:\/\/'$(hostname -f)'\/kolab-webadmin\/api\1/; p; x; p; x; d }; x' /etc/kolab/kolab.conf
 
         sed -i "s/\$config\['assets_path'\] = '.*';/\$config\['assets_path'\] = '\/assets\/';/g" /etc/roundcubemail/config.inc.php
 
-        # Comment apache
-        sed -i --follow-symlinks '/^[^;]*httpd/s/^/;/' /etc/supervisord.conf
+        # Disable apache
+        systemctl stop apache
+        systemctl disable apache
         # Uncoment nginx and php-fpm
-        sed -i --follow-symlinks '/^;.*nginx/s/^;//' /etc/supervisord.conf
-        sed -i --follow-symlinks '/^;.*php-fpm/s/^;//' /etc/supervisord.conf
+        systemctl enable php-fpm
+        systemctl start php-fpm
+        systemctl enable nginx
+        systemctl start nginx
+
 
         echo "info:  finished configuring nginx"
     else
@@ -270,7 +272,8 @@ EOF
         /usr/lib/cyrus-imapd/sievec /var/lib/imap/sieve/global/default.script /var/lib/imap/sieve/global/default.bc
     
         # Uncoment set_default_sieve
-        sed -i --follow-symlinks '/^;.*set_default_sieve/s/^;//' /etc/supervisord.conf
+        systemctl enable set_spam_sieve
+        systemctl start set_spam_sieve
 
         echo "info:  finished configuring amavis"
     else
@@ -378,11 +381,12 @@ EOF
 
 configure_fail2ban()
 {
-    if [ "$(grep -c "^[^;]*fail2ban" /etc/supervisord.conf)" == "0" ] ; then
+    if [ "systemctl is-enabled fail2ban; echo $?)" == "1" ] ; then
         echo "info:  start configuring Fail2ban"
 
         # Uncoment fail2ban
-        sed -i --follow-symlinks '/^;.*fail2ban/s/^;//' /etc/supervisord.conf
+        systemctl enable fail2ban
+        systemctl start fail2ban
 
         echo "info:  finished configuring Fail2ban"
     else
@@ -419,7 +423,8 @@ EOF
         postconf -e non_smtpd_milters=inet:localhost:8891
     
         # Uncoment opendkim
-        sed -i --follow-symlinks '/^;.*opendkim/s/^;//' /etc/supervisord.conf
+        systemctl enable opendkim
+        systemctl start opendkim
 
         echo "info:  finished configuring OpenDKIM"
     else
@@ -515,8 +520,10 @@ postfix_milter()
         sed -i '/^[^#].*receive_override_options=no_milters/d' /etc/postfix/master.cf
     
         # Comment amavis and clamd
-        sed -i --follow-symlinks '/^[^;]*amavisd/s/^/;/' /etc/supervisord.conf
-        sed -i --follow-symlinks '/^[^;]*clamd/s/^/;/' /etc/supervisord.conf
+        systemctl enable amavisd
+        systemctl start  amavisd
+        systemctl enable clamd
+        systemctl start  clamd
     
         echo "info:  finished configuring another milter"
     fi
@@ -589,12 +596,6 @@ stop_services()
 
     echo "info:  finished stopping services"
 }
-
-start_services()
-{
-         echo "info:  Starting services"
-         /usr/bin/supervisord
-} 
 
 setup_wizard ()
 {

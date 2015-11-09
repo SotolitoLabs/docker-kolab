@@ -1,13 +1,14 @@
-FROM centos:centos6
+FROM centos:centos7
 MAINTAINER kvaps <kvapss@gmail.com>
-ENV REFRESHED_AT 2015-11-03
+MAINTAINER Iván Chavero <ichavero@chavero.com.mx>
+ENV REFRESHED_AT 2015-11-09
 
 
 RUN yum -y update
 RUN yum -y install epel-release 
 RUN yum -y install http://nginx.org/packages/centos/6/noarch/RPMS/nginx-release-centos-6-0.el6.ngx.noarch.rpm
-RUN curl -o /etc/yum.repos.d/Kolab:3.4.repo http://obs.kolabsys.com/repositories/Kolab:/3.4/CentOS_6/Kolab:3.4.repo
-RUN curl -o /etc/yum.repos.d/Kolab:3.4:Updates.repo http://obs.kolabsys.com/repositories/Kolab:/3.4:/Updates/CentOS_6/Kolab:3.4:Updates.repo
+RUN curl -o /etc/yum.repos.d/Kolab:3.4.repo http://obs.kolabsys.com/repositories/Kolab:/3.4/CentOS_7/Kolab:3.4.repo
+RUN curl -o /etc/yum.repos.d/Kolab:3.4:Updates.repo http://obs.kolabsys.com/repositories/Kolab:/3.4:/Updates/CentOS_7/Kolab:3.4:Updates.repo
 
 RUN gpg --keyserver pgp.mit.edu --recv-key 0x446D5A45
 RUN gpg --export --armor devel@lists.kolab.org > devel.asc
@@ -44,7 +45,7 @@ RUN sed -i "840s/\$this/\$me/g"  /usr/share/roundcubemail/program/lib/Roundcube/
 ADD service-wrapper.sh /bin/service-wrapper.sh
 ADD set_spam_sieve.sh /bin/set_spam_sieve.sh
 ADD start.sh /bin/start.sh
-ADD configs/supervisord.conf /etc/supervisord.conf
+#ADD configs/supervisord.conf /etc/supervisord.conf
 ADD configs/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf
 RUN rm -f /etc/php-fpm.d/www.conf
 ADD configs/php-fpm.d/* /etc/php-fpm.d/
@@ -52,7 +53,6 @@ ADD configs/fail2ban/jail.conf /etc/fail2ban/jail.conf
 ADD configs/fail2ban/filter.d/* /etc/fail2ban/filter.d/
 
 WORKDIR /root
-
 
 VOLUME ["/data"]
 
