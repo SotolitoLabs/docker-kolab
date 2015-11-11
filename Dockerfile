@@ -25,7 +25,7 @@ RUN yum -y install kolab
 RUN yum -y install supervisor expect mod_ssl nginx php-fpm opendkim fail2ban git php-devel zlib-devel gcc pcre-devel dhclient
 
 #Update php-zlib
-RUN pecl install zip
+#RUN pecl install zip
 
 #Install zipdownload
 RUN git clone https://github.com/roundcube/roundcubemail/ --depth 1 /tmp/roundcube
